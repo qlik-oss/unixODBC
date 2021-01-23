@@ -205,11 +205,11 @@ SQLRETURN SQLDriverConnectW(
 {
     DMHDBC connection = (DMHDBC)hdbc;
     struct con_struct con_struct;
-    char *driver = NULL, *dsn = NULL;
+    char *driver = NULL, *dsn = NULL, *filedsn;
     char lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver_name[ INI_MAX_PROPERTY_VALUE + 1 ];
-	SQLWCHAR local_conn_string[ 1024 ];
-	SQLCHAR local_conn_str_in[ 1024 ];
+    SQLWCHAR local_conn_string[ 2048 ];
+    SQLCHAR local_conn_str_in[ 1024 ];
     SQLRETURN ret_from_connect;
     SQLCHAR s1[ 2048 ];
     int warnings = 0;
@@ -448,12 +448,204 @@ SQLRETURN SQLDriverConnectW(
 	}
 
     /*
-     * look for some keywords
-     *
-     * TO_DO FILEDSN's
-     *
-     * have we got a DRIVER= attribute
+     * open the file dsn, get each entry from it, if it's not in the connection
+     * struct, add it
      */
+
+    filedsn = __get_attribute_value( &con_struct, "FILEDSN" );
+    if ( filedsn )
+    {
+        WCHAR *filedsn_w = _multi_string_alloc_and_expand(filedsn);
+        WCHAR *odbc_w = _multi_string_alloc_and_expand("ODBC");
+        WCHAR str[ 1024 * 16 ];
+        
+        size_t local_conn_string_max_len = sizeof( local_conn_string )/ sizeof( local_conn_string[0] );
+    
+
+        if ( SQLReadFileDSNW( filedsn_w, odbc_w, NULL, str, sizeof( str ), NULL ))
+        {
+            struct con_struct con_struct1;
+
+            free(filedsn_w);
+            free(odbc_w);
+            
+            if ( wide_strlen( str ) )
+            {
+                __parse_connection_string_w( &con_struct1, str, wide_strlen( str ));
+
+                /*
+                 * Get the attributes from the original string
+                 */
+                local_conn_string[ 0 ] = '\0';
+
+                if ( con_struct.count )
+                {
+                    struct con_pair *cp;
+
+                    cp = con_struct.list;
+                    while ( cp )
+                    {
+                        char *str1;
+                        /*
+                         * Don't pass FILEDSN down
+                         */
+
+                        if (strcasecmp( cp->keyword, "FILEDSN" ) )
+                        {
+                            str1 = malloc( strlen( cp->keyword ) + strlen( cp->attribute ) + 10 );
+                            if (!str1)
+                            {
+                                dm_log_write(__FILE__,
+                                             __LINE__,
+                                             LOG_INFO,
+                                             LOG_INFO,
+                                             "Error: HY001");
+
+                                __post_internal_error(&connection->error,
+                                                      ERROR_HY001, NULL,
+                                                      connection->environment->requested_version);
+
+                                return function_return(SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0);
+                            }
+                            
+                            if ( wide_strlen( local_conn_string ) > 0 )
+                            {
+                                sprintf( str1, ";%s=%s", cp -> keyword, cp -> attribute );
+                            }
+                            else
+                            {
+                                sprintf( str1, "%s=%s", cp -> keyword, cp -> attribute );
+                            }
+
+                            if ( wide_strlen( local_conn_string ) + strlen( str1 ) < local_conn_string_max_len - 1 ) {
+                                SQLWCHAR *str1_w = ansi_to_unicode_alloc( str1, strlen( str1 ), connection, NULL );
+
+                                if ( !str1_w ) {
+                                    dm_log_write( __FILE__,
+                                            __LINE__,
+                                            LOG_INFO,
+                                            LOG_INFO,
+                                            "Error: HY001" );
+
+                                    __post_internal_error( &connection -> error,
+                                            ERROR_HY001, NULL,
+                                            connection -> environment -> requested_version );
+
+                                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
+                                }
+                                wide_strcat( local_conn_string, str1_w);
+
+                                free(str1_w);
+                            }
+                            else {
+                                warnings = 1;
+                                __post_internal_error( &connection -> error,
+                                        ERROR_01004, NULL,
+                                        connection -> environment -> requested_version );
+                            }
+                            
+                            free(str1);
+                            
+                        }
+
+                        cp = cp->next;
+                    }
+                }
+
+                if ( con_struct1.count )
+                {
+                    struct con_pair *cp;
+
+                    cp = con_struct1.list;
+                    while( cp )
+                    {
+                        char *str1;
+                        if (!__get_attribute_value( &con_struct, cp->keyword ) )
+                        {
+
+                            str1 = malloc( strlen( cp->keyword ) + strlen( cp->attribute ) + 10 );
+                            if (!str1)
+                            {
+                                dm_log_write(__FILE__,
+                                             __LINE__,
+                                             LOG_INFO,
+                                             LOG_INFO,
+                                             "Error: HY001");
+
+                                __post_internal_error(&connection->error,
+                                                      ERROR_HY001, NULL,
+                                                      connection->environment->requested_version);
+
+                                return function_return(SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0);
+                            }
+                            if ( wide_strlen( local_conn_string ) > 0 )
+                            {
+                                sprintf(str1, ";%s=%s", cp->keyword, cp->attribute);
+                            }
+                            else
+                            {
+                                sprintf(str1, "%s=%s", cp->keyword, cp->attribute);
+                            }
+                            if ( wide_strlen( local_conn_string ) + strlen( str1 )  < local_conn_string_max_len - 1 )
+                            {
+                                SQLWCHAR *str1_w = ansi_to_unicode_alloc( str1, strlen( str1 ), connection, NULL );
+                                if ( !str1_w ) {
+                                    dm_log_write( __FILE__,
+                                            __LINE__,
+                                            LOG_INFO,
+                                            LOG_INFO,
+                                            "Error: HY001" );
+
+                                    __post_internal_error( &connection -> error,
+                                            ERROR_HY001, NULL,
+                                            connection -> environment -> requested_version );
+
+                                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
+                                }
+                                wide_strcat( local_conn_string, str1_w);
+
+                                free(str1_w);
+                            }
+                            else
+                            {
+                                warnings = 1;
+                                __post_internal_error(&connection->error,
+                                                      ERROR_01004, NULL,
+                                                      connection->environment->requested_version);
+                            }
+                            
+                            free(str1);
+                        }
+                        
+                        cp = cp->next;
+                        
+                    }
+                }
+                
+                conn_str_in = local_conn_string;
+                len_conn_str_in = wide_strlen(local_conn_string);
+
+                __release_conn(&con_struct1);
+
+            }
+
+
+            /*
+             * reparse the string
+             */
+
+            __release_conn( &con_struct );
+
+            __parse_connection_string_w( &con_struct,
+                    conn_str_in, len_conn_str_in );
+        }
+        else 
+        {
+            free(filedsn_w);
+            free(odbc_w);
+        }
+    }
+    
 
     driver = __get_attribute_value( &con_struct, "DRIVER" );
     if ( driver )
