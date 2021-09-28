@@ -185,6 +185,17 @@ eval "SHLIBEXT=$shrext_cmds"
 AC_MSG_RESULT($SHLIBEXT)
 AC_SUBST(SHLIBEXT,$SHLIBEXT)
 
+dnl Check whether the user specified a path in which libltdl should search for
+dnl ODBC drivers. This search occurs before libltdl tries other paths, such as
+dnl its own default search path or the system library search path.
+dnl
+dnl This option is useful for multi-arch systems such as Debian, which can have
+dnl multiple arch-specific library search paths present on a given system.
+AC_ARG_WITH([odbc-driver-path],
+  [AS_HELP_STRING([--with-odbc-driver-path=DIR], [search for ODBC drivers in DIR at run-time before trying the libltdl and system library search paths])],
+  [AC_DEFINE_UNQUOTED([MODULEDIR], ["`eval echo ${withval}`"], [ODBC driver search path])]
+)
+
 AC_DEFINE_UNQUOTED([SHLIBEXT], "$shrext_cmds", [Shared lib extension])
 AC_DEFINE_DIR([DEFLIB_PATH], [libdir], [Lib directory])
 AC_DEFINE_DIR([LIB_PREFIX], [libdir], [Lib directory])
@@ -341,6 +352,9 @@ case $host_os in
     ;;
 esac
 
+dnl intptr_t is used in places now
+AC_TYPE_INTPTR_T
+
 dnl check how time() can be used
 AC_HEADER_TIME
 AC_CHECK_HEADERS(sys/time.h)
@@ -358,8 +372,10 @@ fi
 AC_CHECK_LONG_LONG
 AC_CHECK_SIZEOF([long int])
 AC_CHECK_TYPES([ptrdiff_t])
+AC_SYS_LARGEFILE
+AC_FUNC_FSEEKO
 
-AC_CHECK_FUNCS( strcasecmp strncasecmp vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid getpwuid_r nl_langinfo )
+AC_CHECK_FUNCS( strcasecmp strncasecmp vsnprintf strtol atoll strtoll endpwent gettimeofday ftime time stricmp strnicmp getuid getpwuid getpwuid_r nl_langinfo fseeko setvbuf )
 
 AM_LANGINFO_CODESET
 

@@ -3295,6 +3295,23 @@ char * __wstring_with_length_hide_pwd( SQLCHAR *out, SQLWCHAR *str, SQLINTEGER l
 {
     char *p = __wstring_with_length( out, str, len );
 
+    if ( str )
+    {
+        char *ptr;
+
+        ptr = strstr( p, "PWD=" );
+        while ( ptr )
+        {
+            ptr += 4;
+            while ( *ptr && *ptr != ';' && *ptr != ']' )
+            {
+                *ptr = '*';
+                ptr ++;
+            }
+            ptr = strstr( ptr, "PWD=" );
+        }
+    }
+
     return p;
 }
 
@@ -4194,8 +4211,9 @@ void extract_diag_error( int htype,
     SQLCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
     SQLCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLCHAR sqlstate[ 6 ];
-    SQLINTEGER native, len;
+    SQLINTEGER native;
     SQLINTEGER rec_number;
+    SQLSMALLINT len;
     
     head -> return_code = return_code;
     head -> header_set = 0;
@@ -4571,8 +4589,9 @@ void extract_diag_error_w( int htype,
     SQLWCHAR msg[ SQL_MAX_MESSAGE_LENGTH + 32 ];
     SQLWCHAR msg1[ SQL_MAX_MESSAGE_LENGTH + 1 ];
     SQLWCHAR sqlstate[ 6 ];
-    SQLINTEGER native, len;
+    SQLINTEGER native;
     SQLINTEGER rec_number;
+    SQLSMALLINT len;
 
     head -> return_code = return_code;
     head -> header_set = 0;
@@ -5627,6 +5646,13 @@ void __post_internal_error_api( EHEAD *error_handle,
         else
             strcpy( sqlstate, "S1000" );
         message = "General error";
+        break;
+
+      case ERROR_HYT02:
+        strcpy( sqlstate, "HYT02");
+        message = "Connection pool at capacity and the wait has timed out";
+        subclass = SUBCLASS_ODBC;
+        class = SUBCLASS_ODBC;
         break;
 
 	  default:

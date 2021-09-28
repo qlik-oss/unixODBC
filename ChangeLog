@@ -2,6 +2,14 @@
 2.3.10pre
 
     * Add connection pooling via wide connection functions
+    * Remove "#define VERSION" from unixodbc_conf.h
+    * Call driver functions through prototypes 
+    * Add connection pool limit option
+    * Add fseeko support in cursor lib
+    * Try and prevent logging buffer overflow
+    * Add 'echo' option to isql/iusql
+    * Alter isql/iusql buffering
+    * Alter unicode to ascii conversion in SQLGetDiagField
 
 06-Sep-2020
 2.3.9
