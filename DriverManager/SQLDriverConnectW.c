@@ -215,10 +215,10 @@ SQLRETURN SQLDriverConnectW(
     char *driver = NULL, *dsn = NULL, *filedsn;
     char lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver_name[ INI_MAX_PROPERTY_VALUE + 1 ];
-    SQLWCHAR local_conn_string[ 2048 ];
+    SQLWCHAR local_conn_string[ 4096 ];
     SQLCHAR local_conn_str_in[ 1024 ];
     SQLRETURN ret_from_connect;
-    SQLCHAR s1[ 2048 ];
+    SQLCHAR s1[ 4096 ];
     int warnings = 0;
     CPOOLHEAD *pooh = 0;
 
@@ -612,6 +612,8 @@ retry:
      * TO_DO FILEDSN's
      *
      * have we got a DRIVER= attribute
+     * open the file dsn, get each entry from it, if it's not in the connection
+     * struct, add it
      */
 
     filedsn = __get_attribute_value( &con_struct, "FILEDSN" );
