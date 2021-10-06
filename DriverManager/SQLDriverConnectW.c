@@ -205,13 +205,13 @@ SQLRETURN SQLDriverConnectW(
 {
     DMHDBC connection = (DMHDBC)hdbc;
     struct con_struct con_struct;
-    char *driver = NULL, *dsn = NULL;
+    char *driver = NULL, *dsn = NULL, *filedsn;
     char lib_name[ INI_MAX_PROPERTY_VALUE + 1 ];
     char driver_name[ INI_MAX_PROPERTY_VALUE + 1 ];
-	SQLWCHAR local_conn_string[ 1024 ];
+	SQLWCHAR local_conn_string[ 4096 ];
 	SQLCHAR local_conn_str_in[ 1024 ];
     SQLRETURN ret_from_connect;
-    SQLCHAR s1[ 2048 ];
+    SQLCHAR s1[ 4096 ];
     int warnings = 0;
 
     /*
@@ -222,10 +222,10 @@ SQLRETURN SQLDriverConnectW(
 
     if ( !__validate_dbc( connection ))
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                    LOG_INFO,
+                    LOG_INFO,
                     "Error: SQL_INVALID_HANDLE" );
 
 #ifdef WITH_HANDLE_REDIRECT
@@ -235,24 +235,24 @@ SQLRETURN SQLDriverConnectW(
 			parent_connection = find_parent_handle( connection, SQL_HANDLE_DBC );
 
 			if ( parent_connection ) {
-        		dm_log_write( __FILE__, 
-                	__LINE__, 
-                    	LOG_INFO, 
-                    	LOG_INFO, 
+        		dm_log_write( __FILE__,
+                	__LINE__,
+                    	LOG_INFO,
+                    	LOG_INFO,
                     	"Info: found parent handle" );
 
 				if ( CHECK_SQLDRIVERCONNECTW( parent_connection ))
 				{
-        			dm_log_write( __FILE__, 
-                		__LINE__, 
-                   		 	LOG_INFO, 
-                   		 	LOG_INFO, 
+        			dm_log_write( __FILE__,
+                		__LINE__,
+                   		 	LOG_INFO,
+                   		 	LOG_INFO,
                    		 	"Info: calling redirected driver function" );
 
-					return SQLDRIVERCONNECTW( parent_connection, 
-							connection, 
-							hwnd, 
-							conn_str_in, 
+					return SQLDRIVERCONNECTW( parent_connection,
+							connection,
+							hwnd,
+							conn_str_in,
 							len_conn_str_in,
 							conn_str_out,
 							conn_str_out_max,
@@ -279,17 +279,17 @@ SQLRETURN SQLDriverConnectW(
 \n\t\t\tCompletion = %d",
                 connection,
                 hwnd,
-                __wstring_with_length_hide_pwd( s1, conn_str_in, 
-                    len_conn_str_in ), 
+                __wstring_with_length_hide_pwd( s1, conn_str_in,
+                    len_conn_str_in ),
                 conn_str_out,
                 conn_str_out_max,
                 ptr_conn_str_out,
                 driver_completion );
 
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 connection -> msg );
     }
 
@@ -297,10 +297,10 @@ SQLRETURN SQLDriverConnectW(
 
     if ( len_conn_str_in < 0 && len_conn_str_in != SQL_NTS )
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 "Error: HY090" );
 
         __post_internal_error( &connection -> error,
@@ -313,10 +313,10 @@ SQLRETURN SQLDriverConnectW(
     if ( driver_completion == SQL_DRIVER_PROMPT &&
             hwnd == NULL )
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 "Error: HY092" );
 
         __post_internal_error( &connection -> error,
@@ -331,10 +331,10 @@ SQLRETURN SQLDriverConnectW(
             driver_completion != SQL_DRIVER_COMPLETE_REQUIRED &&
             driver_completion != SQL_DRIVER_NOPROMPT )
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 "Error: HY110" );
 
         __post_internal_error( &connection -> error,
@@ -350,10 +350,10 @@ SQLRETURN SQLDriverConnectW(
 
     if ( connection -> state != STATE_C2 )
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 "Error: 08002" );
 
         __post_internal_error( &connection -> error,
@@ -367,7 +367,7 @@ SQLRETURN SQLDriverConnectW(
      * parse the connection string
      */
 
-	if ( driver_completion == SQL_DRIVER_NOPROMPT ) 
+	if ( driver_completion == SQL_DRIVER_NOPROMPT )
 	{
         char *ansi_conn_str_in;
 
@@ -382,7 +382,7 @@ SQLRETURN SQLDriverConnectW(
 			__parse_connection_string( &con_struct,
 				ansi_conn_str_in, len_conn_str_in );
 		}
-		else 
+		else
 		{
 			__parse_connection_string_w( &con_struct,
 				conn_str_in, len_conn_str_in );
@@ -404,8 +404,8 @@ SQLRETURN SQLDriverConnectW(
             		conn_str_in, len_conn_str_in );
 		}
 
-		if ( !__get_attribute_value( &con_struct, "DSN" ) && 
-			!__get_attribute_value( &con_struct, "DRIVER" ) && 
+		if ( !__get_attribute_value( &con_struct, "DSN" ) &&
+			!__get_attribute_value( &con_struct, "DRIVER" ) &&
 			!__get_attribute_value( &con_struct, "FILEDSN" ))
 		{
 			int ret;
@@ -417,16 +417,16 @@ SQLRETURN SQLDriverConnectW(
 			 */
 
 			ret = _SQLDriverConnectPromptW( hwnd, returned_wdsn, sizeof( returned_wdsn ));
-			if ( !ret || returned_wdsn[ 0 ] == 0 ) 
+			if ( !ret || returned_wdsn[ 0 ] == 0 )
 			{
         		__append_pair( &con_struct, "DSN", "DEFAULT" );
 			}
-			else 
+			else
 			{
                 unicode_to_ansi_copy((char*) returned_dsn, sizeof( returned_dsn ), returned_wdsn, SQL_NTS, connection, NULL );
 				prefix = returned_dsn;
 				target = (SQLCHAR*)strchr( (char*)returned_dsn, '=' );
-				if ( target ) 
+				if ( target )
 				{
 					*target = '\0';
 					target ++;
@@ -450,8 +450,206 @@ SQLRETURN SQLDriverConnectW(
     /*
      * look for some keywords
      *
-     * TO_DO FILEDSN's
-     *
+     * FILEDSN
+     */
+
+    filedsn = __get_attribute_value( &con_struct, "FILEDSN" );
+    if ( filedsn )
+    {
+        WCHAR *filedsn_w = _multi_string_alloc_and_expand(filedsn);
+        WCHAR *odbc_w = _multi_string_alloc_and_expand("ODBC");
+        WCHAR str[ 1024 * 16 ];
+
+        size_t local_conn_string_max_len = sizeof( local_conn_string )/ sizeof( local_conn_string[0] );
+
+
+        if ( SQLReadFileDSNW( filedsn_w, odbc_w, NULL, str, sizeof( str ), NULL ))
+        {
+            struct con_struct con_struct1;
+
+            free(filedsn_w);
+            free(odbc_w);
+
+            if ( wide_strlen( str ) )
+            {
+                __parse_connection_string_w( &con_struct1, str, wide_strlen( str ));
+
+                /*
+                 * Get the attributes from the original string
+                 */
+                local_conn_string[ 0 ] = '\0';
+
+                if ( con_struct.count )
+                {
+                    struct con_pair *cp;
+
+                    cp = con_struct.list;
+                    while ( cp )
+                    {
+                        char *str1;
+                        /*
+                         * Don't pass FILEDSN down
+                         */
+
+                        if (strcasecmp( cp->keyword, "FILEDSN" ) )
+                        {
+                            str1 = malloc( strlen( cp->keyword ) + strlen( cp->attribute ) + 10 );
+                            if (!str1)
+                            {
+                                dm_log_write(__FILE__,
+                                             __LINE__,
+                                             LOG_INFO,
+                                             LOG_INFO,
+                                             "Error: HY001");
+
+                                __post_internal_error(&connection->error,
+                                                      ERROR_HY001, NULL,
+                                                      connection->environment->requested_version);
+
+                                return function_return(SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0);
+                            }
+
+                            if ( wide_strlen( local_conn_string ) > 0 )
+                            {
+                                sprintf( str1, ";%s=%s", cp -> keyword, cp -> attribute );
+                            }
+                            else
+                            {
+                                sprintf( str1, "%s=%s", cp -> keyword, cp -> attribute );
+                            }
+
+                            if ( wide_strlen( local_conn_string ) + strlen( str1 ) < local_conn_string_max_len - 1 ) {
+                                SQLWCHAR *str1_w = ansi_to_unicode_alloc( str1, strlen( str1 ), connection, NULL );
+
+                                if ( !str1_w ) {
+                                    dm_log_write( __FILE__,
+                                            __LINE__,
+                                            LOG_INFO,
+                                            LOG_INFO,
+                                            "Error: HY001" );
+
+                                    __post_internal_error( &connection -> error,
+                                            ERROR_HY001, NULL,
+                                            connection -> environment -> requested_version );
+
+                                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
+                                }
+                                wide_strcat( local_conn_string, str1_w);
+
+                                free(str1_w);
+                            }
+                            else {
+                                warnings = 1;
+                                __post_internal_error( &connection -> error,
+                                        ERROR_01004, NULL,
+                                        connection -> environment -> requested_version );
+                            }
+
+                            free(str1);
+
+                        }
+
+                        cp = cp->next;
+                    }
+                }
+
+                if ( con_struct1.count )
+                {
+                    struct con_pair *cp;
+
+                    cp = con_struct1.list;
+                    while( cp )
+                    {
+                        char *str1;
+                        if (!__get_attribute_value( &con_struct, cp->keyword ) )
+                        {
+
+                            str1 = malloc( strlen( cp->keyword ) + strlen( cp->attribute ) + 10 );
+                            if (!str1)
+                            {
+                                dm_log_write(__FILE__,
+                                             __LINE__,
+                                             LOG_INFO,
+                                             LOG_INFO,
+                                             "Error: HY001");
+
+                                __post_internal_error(&connection->error,
+                                                      ERROR_HY001, NULL,
+                                                      connection->environment->requested_version);
+
+                                return function_return(SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0);
+                            }
+                            if ( wide_strlen( local_conn_string ) > 0 )
+                            {
+                                sprintf(str1, ";%s=%s", cp->keyword, cp->attribute);
+                            }
+                            else
+                            {
+                                sprintf(str1, "%s=%s", cp->keyword, cp->attribute);
+                            }
+                            if ( wide_strlen( local_conn_string ) + strlen( str1 )  < local_conn_string_max_len - 1 )
+                            {
+                                SQLWCHAR *str1_w = ansi_to_unicode_alloc( str1, strlen( str1 ), connection, NULL );
+                                if ( !str1_w ) {
+                                    dm_log_write( __FILE__,
+                                            __LINE__,
+                                            LOG_INFO,
+                                            LOG_INFO,
+                                            "Error: HY001" );
+
+                                    __post_internal_error( &connection -> error,
+                                            ERROR_HY001, NULL,
+                                            connection -> environment -> requested_version );
+
+                                    return function_return( SQL_HANDLE_DBC, connection, SQL_ERROR, DEFER_R0 );
+                                }
+                                wide_strcat( local_conn_string, str1_w);
+
+                                free(str1_w);
+                            }
+                            else
+                            {
+                                warnings = 1;
+                                __post_internal_error(&connection->error,
+                                                      ERROR_01004, NULL,
+                                                      connection->environment->requested_version);
+                            }
+
+                            free(str1);
+                        }
+
+                        cp = cp->next;
+
+                    }
+                }
+
+                conn_str_in = local_conn_string;
+                len_conn_str_in = wide_strlen(local_conn_string);
+
+                __release_conn(&con_struct1);
+
+            }
+
+
+            /*
+             * reparse the string
+             */
+
+            __release_conn( &con_struct );
+
+            __parse_connection_string_w( &con_struct,
+                    conn_str_in, len_conn_str_in );
+        }
+        else
+        {
+            free(filedsn_w);
+            free(odbc_w);
+        }
+    }
+
+
+
+    /*
      * have we got a DRIVER= attribute
      */
 
@@ -495,10 +693,10 @@ SQLRETURN SQLDriverConnectW(
 
         if ( !dsn )
         {
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
+            dm_log_write( __FILE__,
+                    __LINE__,
+                    LOG_INFO,
+                    LOG_INFO,
                     "Error: IM002" );
 
             __post_internal_error( &connection -> error,
@@ -511,10 +709,10 @@ SQLRETURN SQLDriverConnectW(
 
         if ( strlen( dsn ) > SQL_MAX_DSN_LENGTH )
         {
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
+            dm_log_write( __FILE__,
+                    __LINE__,
+                    LOG_INFO,
+                    LOG_INFO,
                     "Error: IM012" );
 
             __post_internal_error( &connection -> error,
@@ -530,10 +728,10 @@ SQLRETURN SQLDriverConnectW(
 
         if ( !__find_lib_name( dsn, lib_name, driver_name ))
         {
-            dm_log_write( __FILE__, 
-                    __LINE__, 
-                    LOG_INFO, 
-                    LOG_INFO, 
+            dm_log_write( __FILE__,
+                    __LINE__,
+                    LOG_INFO,
+                    LOG_INFO,
                     "Error: IM002" );
 
             __post_internal_error( &connection -> error,
@@ -557,7 +755,7 @@ SQLRETURN SQLDriverConnectW(
         __handle_attr_extensions( connection, dsn, driver_name );
     }
     else {
-        /* 
+        /*
          * the attributes may be in the connection string
          */
         __handle_attr_extensions_cs( connection, &con_struct );
@@ -577,10 +775,10 @@ SQLRETURN SQLDriverConnectW(
     if ( !CHECK_SQLDRIVERCONNECTW( connection ) &&
         !CHECK_SQLDRIVERCONNECT( connection ))
     {
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 "Error: IM001" );
 
         __disconnect_part_one( connection );
@@ -623,7 +821,7 @@ SQLRETURN SQLDriverConnectW(
 
             /*
              * get the errors from the driver before
-             * loseing the connection 
+             * loseing the connection
              */
 
             if ( CHECK_SQLERRORW( connection ))
@@ -682,7 +880,7 @@ SQLRETURN SQLDriverConnectW(
             }
 
 
-            /* 
+            /*
              * if it was a error then return now
              */
 
@@ -738,7 +936,7 @@ SQLRETURN SQLDriverConnectW(
         {
             out_str = NULL;
         }
-       
+
         ret_from_connect = SQLDRIVERCONNECT( connection,
                 connection -> driver_dbc,
                 hwnd,
@@ -774,7 +972,7 @@ SQLRETURN SQLDriverConnectW(
 
             /*
              * get the errors from the driver before
-             * loseing the connection 
+             * loseing the connection
              */
 
             if ( CHECK_SQLERROR( connection ))
@@ -830,7 +1028,7 @@ SQLRETURN SQLDriverConnectW(
                 while( SQL_SUCCEEDED( ret ));
             }
 
-            /* 
+            /*
              * if it was a error then return now
              */
 
@@ -890,7 +1088,7 @@ SQLRETURN SQLDriverConnectW(
     {
         if ( conn_str_out && wide_strlen( conn_str_out ) > 64 )
         {
-            sprintf( connection -> msg, 
+            sprintf( connection -> msg,
                     "\n\t\tExit:[%s]\
                     \n\t\t\tConnection Out [%.64s...]",
                         __get_return_status( ret_from_connect, s1 ),
@@ -902,17 +1100,17 @@ SQLRETURN SQLDriverConnectW(
 
             strcpy( null, "NULL" );
 
-            sprintf( connection -> msg, 
+            sprintf( connection -> msg,
                     "\n\t\tExit:[%s]\
                     \n\t\t\tConnection Out [%s]",
                         __get_return_status( ret_from_connect, s1 ),
                         __wstring_with_length_hide_pwd( s1, conn_str_out, SQL_NTS ));
         }
 
-        dm_log_write( __FILE__, 
-                __LINE__, 
-                LOG_INFO, 
-                LOG_INFO, 
+        dm_log_write( __FILE__,
+                __LINE__,
+                LOG_INFO,
+                LOG_INFO,
                 connection -> msg );
     }
 
