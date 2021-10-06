@@ -57,7 +57,7 @@
   * for the Driver Setup                                 *
   ********************************************************/
 
-#define     INI_MAX_LINE            1000
+#define     INI_MAX_LINE            2000
 #define     INI_MAX_OBJECT_NAME     INI_MAX_LINE
 #define     INI_MAX_PROPERTY_NAME   INI_MAX_LINE
 #define     INI_MAX_PROPERTY_VALUE  INI_MAX_LINE
@@ -159,7 +159,7 @@ BOOL _odbcinst_UserINI(
 	char *pszFileName,
 	BOOL bVerify );
 
-BOOL _odbcinst_SystemINI(		
+BOOL _odbcinst_SystemINI(
 	char *pszFileName,
 	BOOL bVerify );
 
@@ -170,23 +170,23 @@ char * INSTAPI odbcinst_system_file_name( char *buffer );
 char * INSTAPI odbcinst_user_file_path( char *buffer );
 char * INSTAPI odbcinst_user_file_name( char *buffer );
 
-BOOL _odbcinst_ConfigModeINI( 	
+BOOL _odbcinst_ConfigModeINI(
 	char *pszFileName );
 
-int _odbcinst_GetSections(	
+int _odbcinst_GetSections(
 	HINI	hIni,
 	LPSTR	pRetBuffer,
 	int		nRetBuffer,
 	int		*pnBufPos );
 
-int _odbcinst_GetEntries(	
+int _odbcinst_GetEntries(
 	HINI	hIni,
 	LPCSTR	pszSection,
 	LPSTR	pRetBuffer,
 	int		nRetBuffer,
 	int		*pnBufPos );
 
-int _SQLGetInstalledDrivers(	
+int _SQLGetInstalledDrivers(
 	LPCSTR	pszSection,
 	LPCSTR	pszEntry,
 	LPCSTR	pszDefault,
@@ -198,25 +198,25 @@ BOOL _SQLWriteInstalledDrivers(
 	LPCSTR	pszEntry,
 	LPCSTR	pszString );
 
-BOOL _SQLDriverConnectPrompt( 
-	HWND hwnd, 
-	SQLCHAR *dsn, 
+BOOL _SQLDriverConnectPrompt(
+	HWND hwnd,
+	SQLCHAR *dsn,
 	SQLSMALLINT len_dsn );
 
-BOOL _SQLDriverConnectPromptW( 
-	HWND hwnd, 
-	SQLWCHAR *dsn, 
+BOOL _SQLDriverConnectPromptW(
+	HWND hwnd,
+	SQLWCHAR *dsn,
 	SQLSMALLINT len_dsn );
 
 void __set_config_mode( int mode );
 int __get_config_mode( void );
 
-int inst_logPushMsg( 
-        char *pszModule, 
-        char *pszFunctionName, 
-        int nLine, 
-        int nSeverity, 
-        int nCode, 
+int inst_logPushMsg(
+        char *pszModule,
+        char *pszFunctionName,
+        int nLine,
+        int nSeverity,
+        int nCode,
         char *pszMessage );
 
 int inst_logPeekMsg( long nMsg, HLOGMSG *phMsg );
@@ -302,7 +302,7 @@ struct ini_cache
 #define	ODBCINST_PROMPTTYPE_LISTBOX		2
 #define	ODBCINST_PROMPTTYPE_COMBOBOX	3
 #define	ODBCINST_PROMPTTYPE_FILENAME	4
-#define	ODBCINST_PROMPTTYPE_HIDDEN	    5 
+#define	ODBCINST_PROMPTTYPE_HIDDEN	    5
 #define ODBCINST_PROMPTTYPE_TEXTEDIT_PASSWORD 6
 
 typedef struct	tODBCINSTPROPERTY
@@ -368,4 +368,3 @@ int INSTAPI ODBCINSTGetProperties( HODBCINSTPROPERTY hFirstProperty );
 #endif
 
 #endif
-
